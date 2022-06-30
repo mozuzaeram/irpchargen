@@ -26,6 +26,7 @@
  * ```
  */
 
+import { stat } from 'original-fs';
 import './index.css';
 enum STATCODE {
 	STR=0,
@@ -83,7 +84,7 @@ class StatBlock{
 		let rating = this.stats[stat];
 		let save = Math.min(90,rating*5);
 		result.set(STATNAMES[stat],rating.toString());
-		result.set("",save.toString());
+		result.set(STATNAMES[stat]+"_save",save.toString());
 		switch(stat){
 			case STATCODE.STR:{		
 				add("Attack Modifier",3);
@@ -169,26 +170,71 @@ document.addEventListener('DOMContentLoaded',function(){
 	let mystats = new StatBlock();
 	populateStats(mystats);
 });
-
+function stripws(str: string): string {
+	return str.replace(/\s/g,'').replace(/\./g,'')
+}
 const populateStats = (block: StatBlock) => {
 	let main = document.querySelector('#stattable');
 	let stat_table = document.createElement('table');
+	
+	let end_block = document.createElement('td');
+	end_block.setAttribute("rowspan","3");
+	end_block.innerHTML = "Endurance<br>23";
+
+	let mental_block = document.createElement('td');
+	mental_block.setAttribute("rowspan","3");
+	mental_block.innerHTML = "Mental<br>23";
+
+	let charm_block = document.createElement('td');
+	charm_block.setAttribute("rowspan","3");
+	charm_block.innerHTML = "Charm<br>23";
+
+	let fortune_block = document.createElement('td');
+	fortune_block.setAttribute("rowspan","3");
+	fortune_block.innerHTML = "Fortune<br>23";
+
 	stat_table.setAttribute("border","1");
 	
-	for (let index = STATCODE.STR; index <= STATCODE.WIL; index++){
-		let statdata = block.getCharSheetInfoRow(index);
+	function addstats(from:STATCODE,to:STATCODE,groupblock:HTMLTableCellElement) {
+		
+		let statdata = block.getCharSheetInfoRow(from);
 		let newrow = document.createElement('tr');
+		newrow.appendChild(groupblock);
 		statdata.forEach( (value,key) => {
-			if(key != "") {
+			if(key.endsWith("_save") == false) {
 				let newlabel = document.createElement('td');
 				newlabel.innerHTML = key;
 				newrow.appendChild(newlabel);
 			}
 			let newdata = document.createElement('td');
+			newdata.setAttribute("id",stripws(key)+"_label");
 			newdata.innerHTML = value;
 			newrow.appendChild(newdata);
 		});
 		stat_table.appendChild(newrow);
+
+		for (let index = from+1; index <= to; index++){
+			let statdata = block.getCharSheetInfoRow(index);
+			let newrow = document.createElement('tr');
+			statdata.forEach( (value,key) => {
+				if(key.endsWith("_save") == false) {
+					let newlabel = document.createElement('td');
+					newlabel.innerHTML = key;
+					newrow.appendChild(newlabel);
+				}
+				let newdata = document.createElement('td');
+				newdata.setAttribute("id",stripws(key)+"_label");
+				newdata.innerHTML = value;
+				newrow.appendChild(newdata);
+			});
+			stat_table.appendChild(newrow);
+		}
 	}
+
+	addstats(STATCODE.STR,STATCODE.VIT,end_block);
+	addstats(STATCODE.INT,STATCODE.KNW,mental_block);
+	addstats(STATCODE.APP,STATCODE.SOC,charm_block);
+	addstats(STATCODE.AUR,STATCODE.WIL,fortune_block);
+
 	main.appendChild(stat_table);   
 }
